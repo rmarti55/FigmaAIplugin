@@ -1,12 +1,28 @@
 {
-  "name": "ai-plugin-template",
-  "id": "ai-plugin-template",
+  "name": "Layout Generator",
+  "id": "1267011947707869303",
   "api": "1.0.0",
   "main": "dist/code.js",
-  "enableProposedApi": false,
-  "editorType": ["figma", "figjam"],
+  "ui": "dist/ui.html",
+  "editorType": ["figma"],
   "networkAccess": {
-    "allowedDomains": ["*"],
-    "reasoning": "Internet access for local development."
-  }
+    "allowedDomains": ["api.groq.com"],
+    "reasoning": "Required for AI layout generation using Groq API"
+  },
+  "relaunchButtons": [
+    {
+      "command": "generate",
+      "name": "Generate Layout",
+      "multipleSelection": false
+    }
+  ],
+  "permissions": [
+    "currentuser"
+  ],
+  "menu": [
+    {
+      "name": "Generate Layout",
+      "command": "generate"
+    }
+  ]
 }
