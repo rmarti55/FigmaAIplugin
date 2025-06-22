@@ -8,8 +8,8 @@
   "documentAccess": "dynamic-page",
   "networkAccess": {
     "allowedDomains": [
-      "https://api.groq.com/openai/v1/*",
-      "https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app/*"
+      "https://api.groq.com",
+      "https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app"
     ],
     "reasoning": "Access to Groq API for AI functionality and our Vercel-hosted UI",
     "devAllowedDomains": ["http://localhost:3000"]
