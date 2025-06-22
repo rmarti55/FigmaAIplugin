@@ -1,7 +1,22 @@
 export const runtime = 'edge';
 
+interface PromptRequest {
+  prompt: string;
+}
+
 export async function POST(req: Request) {
-  const { prompt } = await req.json();
+  const body = await req.json() as Partial<PromptRequest>;
+  
+  // Type check the request body
+  if (!body || typeof body.prompt !== 'string') {
+    return new Response(JSON.stringify({ error: 'Invalid request body' }), { 
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  const { prompt } = body;
+  
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -18,7 +33,10 @@ export async function POST(req: Request) {
 
   if (!res.ok) {
     console.error("Groq error", await res.text());
-    return new Response(JSON.stringify({ result: "Error: Unable to process request." }), { status: 500 });
+    return new Response(JSON.stringify({ error: "Error: Unable to process request." }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
   const data = await res.json();

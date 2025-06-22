@@ -1,0 +1,34 @@
+{
+  "version": 3,
+  "middleware": {},
+  "functions": {
+    "/api/groq/route": {
+      "files": [
+        "server/middleware-build-manifest.js",
+        "server/middleware-react-loadable-manifest.js",
+        "server/next-font-manifest.js",
+        "server/interception-route-rewrite-manifest.js",
+        "server/edge-runtime-webpack.js",
+        "server/app/api/groq/route.js"
+      ],
+      "name": "app/api/groq/route",
+      "page": "/api/groq/route",
+      "matchers": [
+        {
+          "regexp": "^/api/groq$",
+          "originalSource": "/api/groq"
+        }
+      ],
+      "wasm": [],
+      "assets": [],
+      "env": {
+        "__NEXT_BUILD_ID": "NCv4ROjcdCT9bYqlZP_Dk",
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "xbEjbamVp6Se8SvnvxHGW5N2kAxpOBlL5ZQRI86sB7o=",
+        "__NEXT_PREVIEW_MODE_ID": "19e32be449c9f0cbf0d6f6a5076c166c",
+        "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "1ebbb935ba235942c23c8d716b8ae7beae309694d0d2bcb628d029ff445f1e23",
+        "__NEXT_PREVIEW_MODE_SIGNING_KEY": "da8d2f9071be13a7b09f72ad6f08022b23aeba50586d328739669f59571e1d8d"
+      }
+    }
+  },
+  "sortedMiddleware": []
+}

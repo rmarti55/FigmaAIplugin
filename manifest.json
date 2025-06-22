@@ -3,12 +3,12 @@
   "id": "1267028074781521324",
   "api": "1.0.0",
   "main": "build/code.js",
-  "ui": "https://figmaaiplugin.vercel.app",
+  "ui": "https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app",
   "editorType": ["figma"],
   "permissions": ["networkAccess"],
   "networkAccess": {
-    "allowedDomains": ["api.groq.com"],
-    "reasoning": "To send prompts to Groq LLM",
+    "allowedDomains": ["api.groq.com", "figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app"],
+    "reasoning": "To send prompts to Groq LLM and communicate with the plugin UI",
     "devAllowedDomains": ["http://localhost:3000"]
   }
 } 
