@@ -10,5 +10,6 @@
     "reasoning": "To send prompts to Groq LLM and communicate with the plugin UI",
     "devAllowedDomains": ["http://localhost:3000"]
   },
+  "capabilities": ["textreview"],
   "documentAccess": "dynamic-page"
 } 
