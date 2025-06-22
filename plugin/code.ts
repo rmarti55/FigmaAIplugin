@@ -1,10 +1,11 @@
 /// <reference types="@figma/plugin-typings" />
 
-type MessageType = "applyStyle" | "align" | "rename";
+type MessageType = "applyStyle" | "align" | "rename" | "ui-loaded" | "error";
 
 interface PluginMessage {
   type: MessageType;
-  payload: any;
+  payload?: any;
+  message?: string;
 }
 
 // Load required fonts before any text operations
@@ -84,16 +85,25 @@ const renameLayers = async (payload: any) => {
 
 // Main message handler
 figma.ui.onmessage = async (msg: PluginMessage) => {
-  await loadRequiredFonts();
-
   switch (msg.type) {
+    case "ui-loaded":
+      // UI is ready, initialize if needed
+      figma.ui.postMessage({ type: "init" });
+      break;
+    case "error":
+      console.error("UI Error:", msg.message);
+      figma.notify("An error occurred in the plugin UI");
+      break;
     case "applyStyle":
+      await loadRequiredFonts();
       await applyStyle(msg.payload);
       break;
     case "align":
+      await loadRequiredFonts();
       alignLayers(msg.payload);
       break;
     case "rename":
+      await loadRequiredFonts();
       await renameLayers(msg.payload);
       break;
     default:
