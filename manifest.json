@@ -1,0 +1,14 @@
+{
+  "name": "Figma AI Plugin",
+  "id": "1267028074781521324",
+  "api": "1.0.0",
+  "main": "build/code.js",
+  "ui": "https://figmaaiplugin.vercel.app",
+  "editorType": ["figma"],
+  "permissions": ["networkAccess"],
+  "networkAccess": {
+    "allowedDomains": ["api.groq.com"],
+    "reasoning": "To send prompts to Groq LLM",
+    "devAllowedDomains": ["http://localhost:3000"]
+  }
+} 
