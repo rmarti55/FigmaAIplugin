@@ -6,7 +6,7 @@
   "ui": "https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app",
   "editorType": ["figma"],
   "networkAccess": {
-    "allowedDomains": ["api.groq.com", "figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app"],
+    "allowedDomains": ["https://api.groq.com", "https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app"],
     "reasoning": "To send prompts to Groq LLM and communicate with the plugin UI",
     "devAllowedDomains": ["http://localhost:3000"]
   },
