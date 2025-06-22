@@ -4,18 +4,16 @@ import { resolve } from 'path';
 export default defineConfig({
   build: {
     lib: {
-      entry: {
-        code: resolve(__dirname, 'plugin/code.ts'),
-      },
-      formats: ['es'],
-      fileName: (format, entryName) => `${entryName}.js`
+      entry: resolve(__dirname, 'plugin/code.ts'),
+      formats: ['cjs'],
+      fileName: () => 'code.js'
     },
     outDir: 'build',
     rollupOptions: {
-      external: ['react', 'react-dom'],
       output: {
-        entryFileNames: '[name].js',
-        format: 'es',
+        format: 'cjs',
+        exports: 'auto',
+        inlineDynamicImports: true,
       },
     },
     target: 'es2015',

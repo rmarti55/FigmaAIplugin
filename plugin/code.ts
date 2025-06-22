@@ -83,6 +83,9 @@ const renameLayers = async (payload: any) => {
   }
 };
 
+// Show UI
+figma.showUI(__html__, { width: 400, height: 600 });
+
 // Main message handler
 figma.ui.onmessage = async (msg: PluginMessage) => {
   switch (msg.type) {
@@ -109,7 +112,4 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
     default:
       console.error("Unknown message type:", msg.type);
   }
-};
-
-// Show UI
-figma.showUI(__html__, { width: 400, height: 600 }); 
+}; 
