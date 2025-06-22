@@ -3,7 +3,7 @@
   "id": "1267028074781521324",
   "api": "1.0.0",
   "main": "build/code.js",
-  "ui": "https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app",
+  "ui": "ui.html",
   "editorType": ["figma"],
   "networkAccess": {
     "allowedDomains": ["https://api.groq.com", "https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app"],
