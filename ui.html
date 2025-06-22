@@ -2,12 +2,62 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app; script-src 'self' 'unsafe-inline' https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app; style-src 'self' 'unsafe-inline' https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app;">
     <title>Figma AI Plugin</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+        #error {
+            display: none;
+            padding: 16px;
+            color: #F24822;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        iframe {
+            border: none;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
 </head>
 <body>
+    <div id="error"></div>
     <script>
-        // Redirect to our Vercel-hosted UI
-        window.location.href = 'https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app';
+        // Handle loading the Vercel app
+        window.onload = function() {
+            const iframe = document.createElement('iframe');
+            iframe.src = 'https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app';
+            
+            // Handle loading errors
+            iframe.onerror = function() {
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = 'Failed to load UI. Please check your internet connection.';
+            };
+
+            // Handle messages from the iframe
+            window.onmessage = function(event) {
+                // Only accept messages from our Vercel app
+                if (event.origin !== 'https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app') {
+                    return;
+                }
+                
+                // Forward messages to the plugin
+                parent.postMessage({ pluginMessage: event.data }, '*');
+            };
+
+            // Handle messages from the plugin
+            window.onmessage = function(event) {
+                // Forward messages to the iframe
+                iframe.contentWindow.postMessage(event.data.pluginMessage, 'https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app');
+            };
+
+            document.body.appendChild(iframe);
+        };
     </script>
 </body>
 </html> 

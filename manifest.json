@@ -5,11 +5,28 @@
   "main": "build/code.js",
   "ui": "ui.html",
   "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
   "networkAccess": {
-    "allowedDomains": ["https://api.groq.com", "https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app"],
-    "reasoning": "To send prompts to Groq LLM and communicate with the plugin UI",
+    "allowedDomains": [
+      "https://api.groq.com/openai/v1/*",
+      "https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app/*"
+    ],
+    "reasoning": "Access to Groq API for AI functionality and our Vercel-hosted UI",
     "devAllowedDomains": ["http://localhost:3000"]
   },
-  "capabilities": ["textreview"],
-  "documentAccess": "dynamic-page"
+  "permissions": ["currentuser"],
+  "capabilities": ["textreview", "inspect"],
+  "menu": {
+    "name": "Figma AI",
+    "items": [
+      {
+        "name": "Generate Design",
+        "command": "generate"
+      },
+      {
+        "name": "Settings",
+        "command": "settings"
+      }
+    ]
+  }
 } 
