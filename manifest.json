@@ -15,18 +15,17 @@
     "devAllowedDomains": ["http://localhost:3000"]
   },
   "permissions": ["currentuser"],
-  "capabilities": ["textreview", "inspect"],
-  "menu": {
-    "name": "Figma AI",
-    "items": [
-      {
-        "name": "Generate Design",
-        "command": "generate"
-      },
-      {
-        "name": "Settings",
-        "command": "settings"
-      }
-    ]
-  }
+  "menu": [
+    {
+      "name": "Generate Design",
+      "command": "generate"
+    },
+    {
+      "separator": true
+    },
+    {
+      "name": "Settings",
+      "command": "settings"
+    }
+  ]
 } 

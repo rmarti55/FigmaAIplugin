@@ -2,7 +2,6 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app; script-src 'self' 'unsafe-inline' https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app; style-src 'self' 'unsafe-inline' https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app;">
     <title>Figma AI Plugin</title>
     <style>
         body {
@@ -28,10 +27,11 @@
 <body>
     <div id="error"></div>
     <script>
-        // Handle loading the Vercel app
+        const VERCEL_URL = 'https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app';
+        
         window.onload = function() {
             const iframe = document.createElement('iframe');
-            iframe.src = 'https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app';
+            iframe.src = VERCEL_URL;
             
             // Handle loading errors
             iframe.onerror = function() {
@@ -40,20 +40,19 @@
             };
 
             // Handle messages from the iframe
-            window.onmessage = function(event) {
-                // Only accept messages from our Vercel app
-                if (event.origin !== 'https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app') {
-                    return;
-                }
+            window.onmessage = async function(event) {
+                if (event.origin !== VERCEL_URL) return;
                 
                 // Forward messages to the plugin
                 parent.postMessage({ pluginMessage: event.data }, '*');
             };
 
             // Handle messages from the plugin
-            window.onmessage = function(event) {
+            onmessage = function(event) {
                 // Forward messages to the iframe
-                iframe.contentWindow.postMessage(event.data.pluginMessage, 'https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app');
+                if (event.data.pluginMessage) {
+                    iframe.contentWindow.postMessage(event.data.pluginMessage, VERCEL_URL);
+                }
             };
 
             document.body.appendChild(iframe);
