@@ -4,24 +4,19 @@
   "description": "A Figma plugin powered by Groq for natural language manipulation",
   "main": "plugin/code.ts",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build && tsc -p tsconfig.json",
-    "start": "next start",
-    "lint": "next lint",
-    "watch": "tsc -p tsconfig.json --watch"
+    "build": "vite build",
+    "watch": "vite build --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx"
   },
   "dependencies": {
-    "@figma/plugin-typings": "^1.85.0",
-    "next": "^14.1.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "typescript": "^5.3.3"
+    "@figma/plugin-typings": "^1.85.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.2.0",
     "eslint": "^8.56.0",
-    "eslint-config-next": "^14.1.0"
+    "typescript": "^5.3.3",
+    "vite": "^5.0.0"
   }
-} 
+}

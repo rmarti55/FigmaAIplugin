@@ -2,7 +2,8 @@
   "compilerOptions": {
     "target": "es6",
     "lib": [
-      "es6"
+      "es6",
+      "dom"
     ],
     "moduleResolution": "node",
     "typeRoots": [
@@ -24,13 +25,18 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true
   },
   "include": [
     "plugin/**/*",
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "build"
   ]
 }

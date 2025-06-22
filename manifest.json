@@ -6,12 +6,8 @@
   "ui": "ui.html",
   "editorType": ["figma"],
   "networkAccess": {
-    "allowedDomains": [
-      "https://api.groq.com",
-      "https://figma-ai-plugin55-31pf8zlb0-rmarti55s-projects.vercel.app"
-    ],
-    "reasoning": "Access to Groq API for AI functionality and our Vercel-hosted UI",
-    "devAllowedDomains": ["http://localhost:3000"]
+    "allowedDomains": ["https://api.groq.com"],
+    "reasoning": "Access to Groq API for AI functionality"
   },
   "permissions": ["currentuser"],
   "menu": [
