@@ -62,6 +62,37 @@ const loadRequiredFonts = async () => {
   await figma.loadFontAsync({ family: "Inter", style: "Medium" });
 };
 
+// Helper functions for property validation and transformation
+function isPropertyWritable(node: SceneNode, key: string): boolean {
+  try {
+    const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(node), key);
+    return descriptor?.set !== undefined && 
+           !['id', 'type', 'absoluteTransform', 'absoluteBoundingBox', 
+             'absoluteRenderBounds', 'attachedConnectors', 'boundVariables',
+             'fillGeometry', 'inferredVariables'].includes(key);
+  } catch {
+    return false;
+  }
+}
+
+function transformValueIfNeeded(key: string, value: any): any {
+  // Handle special cases for different property types
+  switch (key) {
+    case 'cornerRadius':
+      return Number(value);
+    case 'rectangleCornerRadii':
+      return Array.isArray(value) ? value : [value, value, value, value];
+    case 'fills':
+      return Array.isArray(value) ? value : [value];
+    case 'strokes':
+      return Array.isArray(value) ? value : [value];
+    case 'effects':
+      return Array.isArray(value) ? value : [value];
+    default:
+      return value;
+  }
+}
+
 // Process natural language command through Groq
 async function processCommand(command: string) {
   try {
@@ -115,6 +146,8 @@ async function processCommand(command: string) {
 async function createNode(nodeType: string, properties: any) {
   let node;
   
+  console.log('Creating node:', { nodeType, properties });
+  
   switch (nodeType.toUpperCase()) {
     case 'RECTANGLE':
       node = figma.createRectangle();
@@ -123,7 +156,13 @@ async function createNode(nodeType: string, properties: any) {
       node = figma.createText();
       // Load font before setting text properties
       if (properties.fontName) {
-        await figma.loadFontAsync(properties.fontName);
+        try {
+          await figma.loadFontAsync(properties.fontName);
+        } catch (error) {
+          const err = error as Error;
+          console.error('Font loading failed:', { fontName: properties.fontName, error: err });
+          throw new Error(`Failed to load font: ${err.message}`);
+        }
       }
       break;
     case 'FRAME':
@@ -142,18 +181,31 @@ async function createNode(nodeType: string, properties: any) {
       throw new Error(`Unsupported node type: ${nodeType}`);
   }
 
-  // Apply properties
-  Object.entries(properties).forEach(([key, value]) => {
-    if (key in node) {
-      (node as any)[key] = value;
+  // Apply properties with validation and logging
+  for (const [key, value] of Object.entries(properties)) {
+    try {
+      console.log('Setting property:', { key, value, nodeType: node.type });
+      
+      if (isPropertyWritable(node, key)) {
+        const transformedValue = transformValueIfNeeded(key, value);
+        (node as any)[key] = transformedValue;
+      } else {
+        console.warn(`Skipping invalid or read-only property: ${key} on ${node.type}`);
+      }
+    } catch (error) {
+      const err = error as Error;
+      console.error('Property set failed:', { key, value, nodeType: node.type, error: err });
+      throw new Error(`Failed to set property ${key}: ${err.message}`);
     }
-  });
+  }
 
   return node;
 }
 
 // Modify existing nodes based on properties
 async function modifyNodes(nodeTypes: string[], properties: any) {
+  console.log('Modifying nodes:', { nodeTypes, properties });
+  
   const selection = figma.currentPage.selection;
   const nodes = selection.filter(node => 
     nodeTypes.includes(node.type)
@@ -166,17 +218,34 @@ async function modifyNodes(nodeTypes: string[], properties: any) {
 
   // If modifying text, ensure fonts are loaded
   if (properties.fontName && nodes.some(node => node.type === "TEXT")) {
-    await figma.loadFontAsync(properties.fontName);
+    try {
+      await figma.loadFontAsync(properties.fontName);
+    } catch (error) {
+      const err = error as Error;
+      console.error('Font loading failed:', { fontName: properties.fontName, error: err });
+      throw new Error(`Failed to load font: ${err.message}`);
+    }
   }
 
-  // Apply properties to all matching nodes
-  nodes.forEach(node => {
-    Object.entries(properties).forEach(([key, value]) => {
-      if (key in node) {
-        (node as any)[key] = value;
+  // Apply properties to all matching nodes with validation and logging
+  for (const node of nodes) {
+    for (const [key, value] of Object.entries(properties)) {
+      try {
+        console.log('Setting property:', { key, value, nodeType: node.type });
+        
+        if (isPropertyWritable(node, key)) {
+          const transformedValue = transformValueIfNeeded(key, value);
+          (node as any)[key] = transformedValue;
+        } else {
+          console.warn(`Skipping invalid or read-only property: ${key} on ${node.type}`);
+        }
+      } catch (error) {
+        const err = error as Error;
+        console.error('Property set failed:', { key, value, nodeType: node.type, error: err });
+        throw new Error(`Failed to set property ${key}: ${err.message}`);
       }
-    });
-  });
+    }
+  }
 }
 
 // Execute the LLM-generated commands on Figma canvas
