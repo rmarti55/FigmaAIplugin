@@ -1,22 +1,27 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
+// https://vitejs.dev/config/
 export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, 'plugin/code.ts'),
-      formats: ['cjs'],
+      formats: ['iife'],
+      name: 'code',
       fileName: () => 'code.js'
     },
     outDir: 'build',
+    emptyOutDir: true,
     rollupOptions: {
       output: {
-        format: 'cjs',
-        exports: 'auto',
-        inlineDynamicImports: true,
-      },
+        extend: true,
+        inlineDynamicImports: true
+      }
     },
     target: 'es2015',
-    minify: false,
+    minify: false, // Easier to debug
   },
+  define: {
+    'process.env.NODE_ENV': '"production"'
+  }
 }); 

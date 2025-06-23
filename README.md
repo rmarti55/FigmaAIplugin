@@ -149,4 +149,211 @@ await figma.loadFontAsync({ family: "SF Pro Text", style: "Regular" });
 - Interpret user prompt into direct Figma Plugin API calls
 - Modify current selection or entire canvas
 - Respond only with code — no extra explanation
-- If prompt is vague, ask for clarification in iframe UI 
+- If prompt is vague, ask for clarification in iframe UI
+
+---
+
+## 🔧 Important Implementation Learnings
+
+After debugging and development, here are critical learnings about Figma plugin architecture:
+
+1. **Keep It Simple**
+   - Maintain three separate files: manifest.json, code.js, ui.html
+   - Don't try to bundle HTML into plugin code
+   - Let Figma handle HTML injection via `__html__` global
+
+2. **Build Configuration**
+   - Use minimal Vite config focused only on plugin code
+   - Don't overcomplicate with modern web bundling patterns
+   - Keep ui.html in root directory for Figma to access directly
+
+3. **Common Pitfalls to Avoid**
+   - Don't fight against Figma's `__html__` global variable
+   - Avoid over-engineering the plugin architecture
+   - Don't try to use complex bundling for the UI
+
+4. **Development Workflow**
+   - Always test in Figma desktop after changes
+   - Use `manifest.json` with local `ui.html` during development
+   - Push to GitHub first, let Vercel auto-deploy for UI changes
+
+5. **Best Practices**
+   - Follow Figma's intended plugin architecture
+   - Keep UI implementation simple and direct
+   - Use TypeScript for plugin code but keep bundling minimal
+
+# Figma AI Plugin
+
+## Core Architecture
+
+Figma plugins require a specific three-file architecture. It's critical to understand and follow this structure:
+
+```
+├── manifest.json    # Plugin configuration
+├── ui.html         # UI code (must be in root directory)
+└── build/
+    └── code.js     # Compiled plugin code
+```
+
+### Key Principles
+
+1. **File Separation**
+   - Never bundle HTML with plugin code
+   - Let Figma handle HTML injection via `__html__` global
+   - Keep UI file in root directory
+   - Build plugin code as IIFE format
+
+2. **Communication**
+   - UI and plugin code communicate via `postMessage`
+   - Plugin code can't access DOM
+   - UI code can't access Figma API directly
+
+## Common Pitfalls
+
+We learned these lessons the hard way. Avoid these common mistakes:
+
+1. **Over-engineering**
+   - Don't treat it like a regular web app
+   - Avoid complex module systems
+   - Don't fight against Figma's architecture
+
+2. **HTML Handling**
+   - Don't try to bundle HTML into plugin code
+   - Don't try to work around `__html__` global
+   - Keep UI file separate and let Figma handle it
+
+3. **File Structure**
+   - Don't put UI file in build directory
+   - Don't try to use dynamic imports
+   - Respect Figma's expected file locations
+
+## Build Configuration
+
+Keep the build configuration minimal. Here's our working Vite config:
+
+```typescript
+export default defineConfig({
+  build: {
+    lib: {
+      entry: resolve(__dirname, 'plugin/code.ts'),
+      formats: ['iife'],
+      name: 'FigmaPlugin',
+      fileName: () => 'code.js'
+    },
+    outDir: 'build',
+    rollupOptions: {
+      output: {
+        extend: true,
+        inlineDynamicImports: true
+      }
+    },
+    target: 'es2015',
+    minify: true,
+  },
+});
+```
+
+### Build Process
+1. Only build the plugin code
+2. Let Figma handle the UI file
+3. No HTML injection or bundling tricks
+
+## Development Workflow
+
+1. **Setup**
+   ```bash
+   npm install    # Install dependencies
+   npm run build  # Build plugin code
+   ```
+
+2. **Development**
+   ```bash
+   npm run watch  # Watch for changes
+   ```
+
+3. **Plugin Structure**
+   - `plugin/code.ts` - Main plugin logic
+   - `ui.html` - Plugin UI
+   - `manifest.json` - Plugin configuration
+
+## UI Implementation
+
+The UI must be a standalone HTML file that:
+1. Uses Figma's theme colors (`var(--figma-color-*)`)
+2. Implements proper message passing
+3. Handles errors appropriately
+
+Example UI structure:
+```html
+<body>
+    <div id="error"></div>
+    <div id="content">
+        <!-- UI elements -->
+    </div>
+    <script>
+        // Message handling
+        window.onmessage = (event) => {
+            if (!/^https:\/\/([\w-]+\.)?figma.com$/.test(event.origin)) {
+                return;
+            }
+            // Handle plugin messages
+        };
+
+        // Send messages to plugin
+        parent.postMessage({ 
+            pluginMessage: { 
+                type: 'action',
+                payload: data 
+            }
+        }, '*');
+    </script>
+</body>
+```
+
+## Plugin Code Implementation
+
+Plugin code should:
+1. Use Figma's `__html__` global
+2. Handle messages properly
+3. Implement proper error handling
+
+Example structure:
+```typescript
+figma.showUI(__html__, { 
+    width: 400, 
+    height: 600,
+    themeColors: true
+});
+
+figma.ui.onmessage = async (msg) => {
+    try {
+        // Handle messages from UI
+    } catch (error) {
+        console.error('Plugin error:', error);
+        figma.notify('An error occurred', { error: true });
+    }
+};
+```
+
+## Best Practices
+
+1. **Follow Figma's Patterns**
+   - Use Figma's built-in systems
+   - Don't try to replicate web app patterns
+   - Keep it simple
+
+2. **Error Handling**
+   - Implement proper error boundaries
+   - Use Figma's notification system
+   - Log errors appropriately
+
+3. **UI Design**
+   - Use Figma's theme colors
+   - Follow Figma's UI patterns
+   - Keep UI responsive
+
+## Resources
+
+- [Figma Plugin API Documentation](https://www.figma.com/plugin-docs/)
+- [Plugin Examples](https://www.figma.com/plugin-docs/plugin-examples/)
+- [UI Styling Guide](https://www.figma.com/plugin-docs/css-variables/) 
