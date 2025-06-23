@@ -6,120 +6,146 @@
     <style>
         body {
             margin: 0;
-            padding: 20px;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 16px;
+            font-family: Inter, sans-serif;
             background: var(--figma-color-bg);
             color: var(--figma-color-text);
+            font-size: 11px;
+            overflow: hidden;
         }
         #error {
             display: none;
-            padding: 16px;
+            padding: 8px 12px;
             color: var(--figma-color-text-danger);
-            background: var(--figma-color-bg-danger);
-            border-radius: 6px;
+            background: var(--figma-color-bg-danger-secondary);
+            border-radius: 2px;
+            margin-bottom: 12px;
+            font-size: 11px;
+        }
+        .input-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
             margin-bottom: 16px;
         }
-        .button {
+        .input-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--figma-color-text);
+        }
+        .command-input {
+            width: 100%;
+            min-height: 80px;
+            padding: 8px;
+            border: 1px solid var(--figma-color-border);
+            border-radius: 2px;
+            background: var(--figma-color-bg);
+            color: var(--figma-color-text);
+            font-family: Inter, sans-serif;
+            font-size: 11px;
+            resize: vertical;
+        }
+        .command-input:focus {
+            border-color: var(--figma-color-border-brand-strong);
+            outline: none;
+        }
+        .submit-button {
             background: var(--figma-color-bg-brand);
             color: var(--figma-color-text-onbrand);
             border: none;
             border-radius: 6px;
             padding: 8px 16px;
             cursor: pointer;
-            font-size: 14px;
-            margin: 4px;
-            width: 100%;
+            font-size: 11px;
+            font-weight: 500;
         }
-        .button:hover {
+        .submit-button:hover {
             background: var(--figma-color-bg-brand-hover);
         }
-        .section {
-            margin-bottom: 24px;
+        .submit-button:active {
+            background: var(--figma-color-bg-brand-pressed);
         }
-        .section-title {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: var(--figma-color-text);
+        .submit-button:disabled {
+            background: var(--figma-color-bg-disabled);
+            color: var(--figma-color-text-disabled);
+            cursor: not-allowed;
+        }
+        #processing {
+            display: none;
+            text-align: center;
+            color: var(--figma-color-text-secondary);
+            margin-top: 16px;
         }
     </style>
 </head>
 <body>
     <div id="error"></div>
-    <div id="content" style="display: none;">
-        <div class="section">
-            <div class="section-title">Style</div>
-            <button class="button" onclick="applyStyle('default')">Apply Default Style</button>
-            <button class="button" onclick="applyStyle('modern')">Apply Modern Style</button>
-        </div>
-        <div class="section">
-            <div class="section-title">Alignment</div>
-            <button class="button" onclick="align('left')">Align Left</button>
-            <button class="button" onclick="align('center')">Align Center</button>
-            <button class="button" onclick="align('right')">Align Right</button>
-        </div>
-        <div class="section">
-            <div class="section-title">Rename</div>
-            <button class="button" onclick="rename('New Layer')">Rename Selected</button>
-        </div>
+    
+    <div class="input-container">
+        <label class="input-label" for="command">What would you like to do?</label>
+        <textarea 
+            id="command" 
+            class="command-input" 
+            placeholder="Describe what you want to do with your Figma file..."
+            rows="4"
+        ></textarea>
+        <button id="submit" class="submit-button">Generate</button>
     </div>
+    <div id="processing">Processing your request...</div>
+
     <script>
-        // Handle any errors that occur during loading
-        window.onerror = function(msg, url, lineNo, columnNo, error) {
+        const commandInput = document.getElementById('command');
+        const submitButton = document.getElementById('submit');
+        const processingDiv = document.getElementById('processing');
+
+        function showError(message) {
             const errorDiv = document.getElementById('error');
             errorDiv.style.display = 'block';
-            errorDiv.textContent = 'Error: ' + msg;
-            parent.postMessage({ pluginMessage: { type: 'error', message: msg } }, '*');
-            return false;
+            errorDiv.textContent = message;
+            parent.postMessage({ pluginMessage: { type: 'error', message } }, '*');
+        }
+
+        function setProcessing(isProcessing) {
+            submitButton.disabled = isProcessing;
+            processingDiv.style.display = isProcessing ? 'block' : 'none';
+            commandInput.disabled = isProcessing;
+        }
+
+        submitButton.onclick = () => {
+            const command = commandInput.value.trim();
+            if (!command) {
+                showError('Please enter a command');
+                return;
+            }
+
+            setProcessing(true);
+            parent.postMessage({ 
+                pluginMessage: { 
+                    type: 'process-command',
+                    payload: { command } 
+                } 
+            }, '*');
         };
 
-        // Style application function
-        function applyStyle(style) {
-            parent.postMessage({ 
-                pluginMessage: { 
-                    type: 'applyStyle', 
-                    payload: { style } 
-                } 
-            }, '*');
-        }
-
-        // Alignment function
-        function align(alignment) {
-            parent.postMessage({ 
-                pluginMessage: { 
-                    type: 'align', 
-                    payload: { alignment } 
-                } 
-            }, '*');
-        }
-
-        // Rename function
-        function rename(name) {
-            parent.postMessage({ 
-                pluginMessage: { 
-                    type: 'rename', 
-                    payload: { name } 
-                } 
-            }, '*');
-        }
-
-        // Initialize plugin message handling
-        window.onmessage = function(event) {
-            // Verify the origin
+        // Handle messages from the plugin
+        window.onmessage = (event) => {
             if (!/^https:\/\/([\w-]+\.)?figma.com$/.test(event.origin)) {
+                showError('Invalid message origin');
                 return;
             }
             
-            // Handle plugin messages
-            if (event.data.pluginMessage) {
-                switch (event.data.pluginMessage.type) {
-                    case 'init':
-                        // Show the content when initialized
-                        document.getElementById('content').style.display = 'block';
-                        break;
-                    default:
-                        console.log('Unknown message type:', event.data.pluginMessage.type);
-                }
+            const msg = event.data.pluginMessage;
+            if (!msg) return;
+
+            switch (msg.type) {
+                case 'command-complete':
+                    setProcessing(false);
+                    commandInput.value = '';
+                    break;
+                case 'command-error':
+                    setProcessing(false);
+                    showError(msg.message);
+                    break;
             }
         };
 

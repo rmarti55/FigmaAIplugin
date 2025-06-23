@@ -9,7 +9,10 @@
     "allowedDomains": ["https://api.groq.com"],
     "reasoning": "Access to Groq API for AI functionality"
   },
-  "permissions": ["currentuser"],
+  "permissions": [
+    "currentuser",
+    "activeusers"
+  ],
   "menu": [
     {
       "name": "Generate Design",

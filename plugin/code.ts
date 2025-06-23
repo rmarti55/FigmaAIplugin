@@ -1,6 +1,9 @@
 /// <reference types="@figma/plugin-typings" />
 
-type MessageType = "applyStyle" | "align" | "rename" | "ui-loaded" | "error";
+// Get the injected HTML
+declare const html: { default: string };
+
+type MessageType = "process-command" | "ui-loaded" | "error" | "command-complete" | "command-error";
 
 interface PluginMessage {
   type: MessageType;
@@ -8,108 +11,270 @@ interface PluginMessage {
   message?: string;
 }
 
-// Load required fonts before any text operations
-const loadRequiredFonts = async () => {
-  await figma.loadFontAsync({ family: "SF Pro Text", style: "Regular" });
-  await figma.loadFontAsync({ family: "SF Pro Text", style: "Medium" });
-  await figma.loadFontAsync({ family: "SF Pro Text", style: "Bold" });
-};
+interface CommandResponse {
+  commands: Array<{
+    type: string;
+    params: Record<string, any>;
+  }>;
+}
 
-// Handle style application
-const applyStyle = async (payload: any) => {
-  const { style } = payload;
-  const selection = figma.currentPage.selection;
+const SYSTEM_PROMPT = `You are a Figma plugin assistant that converts natural language commands into structured actions.
+Your role is to interpret user requests and convert them into specific Figma API commands.
 
-  if (selection.length === 0) {
-    figma.notify("Please select at least one layer");
-    return;
-  }
+Output must be a JSON array of commands, where each command has:
+- type: The type of operation (e.g., "create", "modify", "delete", "style", "arrange")
+- params: An object containing relevant parameters for the operation
 
-  // Apply style to selected layers
-  for (const node of selection) {
-    if ("fills" in node) {
-      // Handle fill styles
-      if (style.fill) {
-        node.fills = [style.fill];
+Example commands:
+{
+  "commands": [
+    {
+      "type": "create",
+      "params": {
+        "nodeType": "RECTANGLE",
+        "properties": {
+          "x": 100,
+          "y": 100,
+          "width": 200,
+          "height": 100,
+          "fills": [{"type": "SOLID", "color": {"r": 1, "g": 0, "b": 0}}]
+        }
       }
     }
-    if ("strokes" in node) {
-      // Handle stroke styles
-      if (style.stroke) {
-        node.strokes = [style.stroke];
-      }
-    }
-  }
-};
+  ]
+}
 
-// Handle alignment
-const alignLayers = (payload: any) => {
-  const { alignment } = payload;
-  const selection = figma.currentPage.selection;
+Only respond with valid JSON. Do not include any explanations or markdown.`;
 
-  if (selection.length === 0) {
-    figma.notify("Please select at least one layer");
-    return;
-  }
-
-  switch (alignment) {
-    case "left":
-      figma.viewport.scrollAndZoomIntoView(selection);
-      figma.group(selection, figma.currentPage).layoutAlign = "MIN";
-      break;
-    case "center":
-      figma.viewport.scrollAndZoomIntoView(selection);
-      figma.group(selection, figma.currentPage).layoutAlign = "CENTER";
-      break;
-    case "right":
-      figma.viewport.scrollAndZoomIntoView(selection);
-      figma.group(selection, figma.currentPage).layoutAlign = "MAX";
-      break;
-  }
-};
-
-// Handle renaming
-const renameLayers = async (payload: any) => {
-  const { name } = payload;
-  const selection = figma.currentPage.selection;
-
-  if (selection.length === 0) {
-    figma.notify("Please select at least one layer");
-    return;
-  }
-
-  for (const node of selection) {
-    node.name = name;
-  }
-};
+// Your personal Groq API key - replace with your actual key
+const GROQ_API_KEY = "YOUR_API_KEY_HERE";
 
 // Show UI
-figma.showUI(__html__, { width: 400, height: 600 });
+figma.showUI(__html__, { 
+  width: 400, 
+  height: 300,
+  themeColors: true
+});
 
-// Main message handler
-figma.ui.onmessage = async (msg: PluginMessage) => {
-  switch (msg.type) {
-    case "ui-loaded":
-      // UI is ready, initialize if needed
-      figma.ui.postMessage({ type: "init" });
+// Load required fonts before any text operations
+const loadRequiredFonts = async () => {
+  await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+  await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+};
+
+// Process natural language command through Groq
+async function processCommand(command: string) {
+  try {
+    // Call Groq API directly
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + GROQ_API_KEY
+      },
+      body: JSON.stringify({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: command }
+        ],
+        temperature: 0.2,
+        response_format: { type: "json_object" }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to process command");
+    }
+
+    const data = await response.json();
+    const result = data.choices?.[0]?.message?.content;
+
+    // Parse and validate the response
+    try {
+      const parsed = JSON.parse(result);
+      if (!Array.isArray(parsed.commands)) {
+        throw new Error("Invalid response format");
+      }
+      return parsed;
+    } catch (e) {
+      console.error("Invalid JSON response from Groq:", result);
+      throw new Error("Invalid response format from AI");
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error("Error processing command:", error.message);
+      throw error;
+    }
+    console.error("Error processing command:", error);
+    throw new Error("An unexpected error occurred");
+  }
+}
+
+// Create a new node based on type and properties
+async function createNode(nodeType: string, properties: any) {
+  let node;
+  
+  switch (nodeType.toUpperCase()) {
+    case 'RECTANGLE':
+      node = figma.createRectangle();
       break;
-    case "error":
-      console.error("UI Error:", msg.message);
-      figma.notify("An error occurred in the plugin UI");
+    case 'TEXT':
+      node = figma.createText();
+      // Load font before setting text properties
+      if (properties.fontName) {
+        await figma.loadFontAsync(properties.fontName);
+      }
       break;
-    case "applyStyle":
-      await loadRequiredFonts();
-      await applyStyle(msg.payload);
+    case 'FRAME':
+      node = figma.createFrame();
       break;
-    case "align":
-      await loadRequiredFonts();
-      alignLayers(msg.payload);
+    case 'COMPONENT':
+      node = figma.createComponent();
       break;
-    case "rename":
-      await loadRequiredFonts();
-      await renameLayers(msg.payload);
+    case 'LINE':
+      node = figma.createLine();
+      break;
+    case 'ELLIPSE':
+      node = figma.createEllipse();
       break;
     default:
-      console.error("Unknown message type:", msg.type);
+      throw new Error(`Unsupported node type: ${nodeType}`);
+  }
+
+  // Apply properties
+  Object.entries(properties).forEach(([key, value]) => {
+    if (key in node) {
+      (node as any)[key] = value;
+    }
+  });
+
+  return node;
+}
+
+// Modify existing nodes based on properties
+async function modifyNodes(nodeTypes: string[], properties: any) {
+  const selection = figma.currentPage.selection;
+  const nodes = selection.filter(node => 
+    nodeTypes.includes(node.type)
+  );
+
+  if (nodes.length === 0) {
+    figma.notify(`No selected nodes of type: ${nodeTypes.join(', ')}`);
+    return;
+  }
+
+  // If modifying text, ensure fonts are loaded
+  if (properties.fontName && nodes.some(node => node.type === "TEXT")) {
+    await figma.loadFontAsync(properties.fontName);
+  }
+
+  // Apply properties to all matching nodes
+  nodes.forEach(node => {
+    Object.entries(properties).forEach(([key, value]) => {
+      if (key in node) {
+        (node as any)[key] = value;
+      }
+    });
+  });
+}
+
+// Execute the LLM-generated commands on Figma canvas
+async function executeCommands(response: CommandResponse) {
+  try {
+    for (const command of response.commands) {
+      switch (command.type.toLowerCase()) {
+        case 'create':
+          const { nodeType, properties } = command.params;
+          const newNode = await createNode(nodeType, properties);
+          figma.currentPage.appendChild(newNode);
+          break;
+
+        case 'modify':
+        case 'style':
+          const { nodeTypes, properties: modifyProps } = command.params;
+          await modifyNodes(
+            Array.isArray(nodeTypes) ? nodeTypes : [nodeTypes],
+            modifyProps
+          );
+          break;
+
+        case 'delete':
+          const selection = figma.currentPage.selection;
+          if (selection.length === 0) {
+            figma.notify('No nodes selected for deletion');
+            return;
+          }
+          selection.forEach(node => node.remove());
+          break;
+
+        case 'arrange':
+          const { operation, spacing } = command.params;
+          const nodes = figma.currentPage.selection;
+          
+          if (nodes.length < 2) {
+            figma.notify('Select at least 2 nodes to arrange');
+            return;
+          }
+
+          switch (operation.toLowerCase()) {
+            case 'horizontal':
+              const sortedX = [...nodes].sort((a, b) => a.x - b.x);
+              let currentX = sortedX[0].x;
+              sortedX.forEach(node => {
+                node.x = currentX;
+                currentX += node.width + (spacing || 10);
+              });
+              break;
+
+            case 'vertical':
+              const sortedY = [...nodes].sort((a, b) => a.y - b.y);
+              let currentY = sortedY[0].y;
+              sortedY.forEach(node => {
+                node.y = currentY;
+                currentY += node.height + (spacing || 10);
+              });
+              break;
+          }
+          break;
+
+        default:
+          console.warn(`Unknown command type: ${command.type}`);
+      }
+    }
+
+    figma.notify('Commands executed successfully');
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to execute commands: ${error.message}`);
+    }
+    throw new Error('Failed to execute commands');
+  }
+}
+
+// Handle messages from the UI
+figma.ui.onmessage = async (msg: PluginMessage) => {
+  try {
+    switch (msg.type) {
+      case 'ui-loaded':
+        // UI is ready to accept commands
+        break;
+
+      case 'process-command':
+        const response = await processCommand(msg.payload.command);
+        await executeCommands(response);
+        figma.ui.postMessage({ type: 'command-complete' });
+        break;
+
+      case 'error':
+        figma.notify(msg.message || 'An error occurred');
+        break;
+    }
+  } catch (error) {
+    console.error('Error handling message:', error);
+    figma.ui.postMessage({ 
+      type: 'command-error',
+      message: error instanceof Error ? error.message : 'An unexpected error occurred'
+    });
   }
 }; 
