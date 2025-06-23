@@ -47,7 +47,7 @@ Example commands:
 Only respond with valid JSON. Do not include any explanations or markdown.`;
 
 // Your personal Groq API key - replace with your actual key
-const GROQ_API_KEY = "YOUR_API_KEY_HERE";
+const GROQ_API_KEY = "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";
 
 // Show UI
 figma.showUI(__html__, { 
