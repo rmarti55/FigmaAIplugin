@@ -1,6 +1,6 @@
-# 🧠 Figma Natural Language Plugin Instructions (Enhanced for Cursor)
+# 🧠 Figma Natural Language Plugin Instructions
 
-This document provides strict implementation guidance for building a Figma plugin powered by Groq that lets users manipulate Figma files using natural language. It includes exact configuration, backend API integration, UI strategy, and development best practices optimized for Cursor.
+This document provides implementation guidance for building a Figma plugin powered by Groq that lets users manipulate Figma files using natural language. It includes configuration, API integration, and development best practices.
 
 ---
 
@@ -23,7 +23,7 @@ This document provides strict implementation guidance for building a Figma plugi
 
 **LLM:** Groq — `meta-llama/llama-4-scout-17b-16e-instruct`
 
-**Reference Design:** [iOS 17 Shared Library](https://www.figma.com/community/file/1248375255495415511/ios-17-and-ipados-17)
+**Architecture:** Direct integration with Groq API, no middleware required.
 
 ---
 
@@ -31,7 +31,7 @@ This document provides strict implementation guidance for building a Figma plugi
 
 ```
 /plugin              → Figma plugin code (TypeScript)
-/app/api/groq/       → Next.js edge function to talk to Groq
+/build               → Compiled plugin output
 /public/fonts/       → Locally installed Apple fonts
 README.md            → This file
 .env                 → Contains GROQ_API_KEY
@@ -41,18 +41,20 @@ README.md            → This file
 
 ## ⚙️ Plugin Setup
 
-- Use **Figma Plugin API** in `plugin/code.ts`
-- React-based iframe hosted on **Vercel** (`https://figmaaiplugin.vercel.app`)
-- Communicate via `figma.ui.postMessage()` + `figma.ui.onmessage`
+1. Configure Groq API Key:
+   - Replace `GROQ_API_KEY` in `plugin/code.ts`
+   - Plugin makes direct API calls to Groq
 
-```ts
-// Strongly typed message format:
-type MessageType = "applyStyle" | "align" | "rename";
-interface PluginMessage {
-  type: MessageType;
-  payload: any;
-}
-```
+2. Build the Plugin:
+   ```bash
+   npm install
+   npm run build
+   ```
+
+3. Import in Figma:
+   - Open Figma Desktop
+   - Plugins > Development > Import plugin from manifest
+   - Select `manifest.json`
 
 ---
 
@@ -60,14 +62,15 @@ interface PluginMessage {
 
 ```json
 {
+  "name": "Figma AI Plugin",
+  "id": "1267028074781521324",
+  "api": "1.0.0",
   "main": "build/code.js",
-  "ui": "https://figmaaiplugin.vercel.app",
+  "ui": "ui.html",
   "editorType": ["figma"],
-  "permissions": ["networkAccess"],
   "networkAccess": {
-    "allowedDomains": ["api.groq.com"],
-    "reasoning": "To send prompts to Groq LLM",
-    "devAllowedDomains": ["http://localhost:3000"]
+    "allowedDomains": ["https://api.groq.com"],
+    "reasoning": "Direct integration with Groq API"
   }
 }
 ```
@@ -175,7 +178,7 @@ After debugging and development, here are critical learnings about Figma plugin 
 4. **Development Workflow**
    - Always test in Figma desktop after changes
    - Use `manifest.json` with local `ui.html` during development
-   - Push to GitHub first, let Vercel auto-deploy for UI changes
+   - Push changes to GitHub to maintain version control
 
 5. **Best Practices**
    - Follow Figma's intended plugin architecture
