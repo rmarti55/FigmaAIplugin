@@ -64,6 +64,9 @@ const loadRequiredFonts = async () => {
 
 // Helper functions for property validation and transformation
 function isPropertyWritable(node: SceneNode, key: string): boolean {
+  // Width and height are handled separately via resize()
+  if (key === 'width' || key === 'height') return false;
+
   try {
     const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(node), key);
     return descriptor?.set !== undefined && 
@@ -72,6 +75,26 @@ function isPropertyWritable(node: SceneNode, key: string): boolean {
              'fillGeometry', 'inferredVariables'].includes(key);
   } catch {
     return false;
+  }
+}
+
+function applyNodeProperty(node: SceneNode, key: string, value: any): void {
+  // Handle width and height via resize
+  if ((key === 'width' || key === 'height') && 'resize' in node) {
+    const currentWidth = node.width;
+    const currentHeight = node.height;
+    const newWidth = key === 'width' ? value : currentWidth;
+    const newHeight = key === 'height' ? value : currentHeight;
+    node.resize(newWidth, newHeight);
+    return;
+  }
+
+  // Handle other properties
+  if (isPropertyWritable(node, key)) {
+    const transformedValue = transformValueIfNeeded(key, value);
+    (node as any)[key] = transformedValue;
+  } else {
+    console.warn(`Skipping invalid or read-only property: ${key} on ${node.type}`);
   }
 }
 
@@ -185,13 +208,7 @@ async function createNode(nodeType: string, properties: any) {
   for (const [key, value] of Object.entries(properties)) {
     try {
       console.log('Setting property:', { key, value, nodeType: node.type });
-      
-      if (isPropertyWritable(node, key)) {
-        const transformedValue = transformValueIfNeeded(key, value);
-        (node as any)[key] = transformedValue;
-      } else {
-        console.warn(`Skipping invalid or read-only property: ${key} on ${node.type}`);
-      }
+      applyNodeProperty(node, key, value);
     } catch (error) {
       const err = error as Error;
       console.error('Property set failed:', { key, value, nodeType: node.type, error: err });
@@ -232,13 +249,7 @@ async function modifyNodes(nodeTypes: string[], properties: any) {
     for (const [key, value] of Object.entries(properties)) {
       try {
         console.log('Setting property:', { key, value, nodeType: node.type });
-        
-        if (isPropertyWritable(node, key)) {
-          const transformedValue = transformValueIfNeeded(key, value);
-          (node as any)[key] = transformedValue;
-        } else {
-          console.warn(`Skipping invalid or read-only property: ${key} on ${node.type}`);
-        }
+        applyNodeProperty(node, key, value);
       } catch (error) {
         const err = error as Error;
         console.error('Property set failed:', { key, value, nodeType: node.type, error: err });
